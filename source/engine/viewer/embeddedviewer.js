@@ -49,7 +49,7 @@ export class EmbeddedViewer
         });
     }
 
-    LoadModelFromUrls (modelUrls)
+    LoadModelFromUrls (modelUrls, callback)
     {
         this.viewer.Clear ();
 
@@ -92,6 +92,7 @@ export class EmbeddedViewer
                     this.viewer.SetUpVector (Direction.Y, false);
                 }
                 this.viewer.FitSphereToWindow (boundingSphere, false);
+                callback();
             },
             onTextureLoaded : () => {
                 this.viewer.Render ();
