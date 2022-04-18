@@ -171,13 +171,15 @@ export class ShadingModel
         this.directionalLight.position.set (lightDir.x, lightDir.y, lightDir.z);
     }
 
-    CreateHighlightMaterial (highlightColor, withOffset)
+    CreateHighlightMaterial (highlightColor, withOffset, opacity)
     {
         let material = null;
         if (this.type === ShadingType.Phong) {
             material = new THREE.MeshPhongMaterial ({
                 color : highlightColor,
-                side : THREE.DoubleSide
+                side : THREE.DoubleSide,
+                opacity: opacity || 1,
+                transparent: true
             });
         } else if (this.type === ShadingType.Physical) {
             material = new THREE.MeshStandardMaterial ({
@@ -433,7 +435,7 @@ export class Viewer
         this.Render ();
     }
 
-    SetMeshesHighlight (highlightColor, isHighlighted)
+    SetMeshesHighlight (highlightColor, isHighlighted, opacity)
     {
         function CreateHighlightMaterials (originalMaterials, highlightMaterial)
         {
@@ -444,7 +446,7 @@ export class Viewer
             return highlightMaterials;
         }
 
-        const highlightMaterial = this.CreateHighlightMaterial (highlightColor);
+        const highlightMaterial = this.CreateHighlightMaterial (highlightColor, opacity);
         this.geometry.EnumerateMeshes ((mesh) => {
             let highlighted = isHighlighted (mesh.userData);
             if (highlighted) {
@@ -463,10 +465,10 @@ export class Viewer
         this.Render ();
     }
 
-    CreateHighlightMaterial (highlightColor)
+    CreateHighlightMaterial (highlightColor, opacity)
     {
         const showEdges = this.geometry.edgeSettings.showEdges;
-        return this.shading.CreateHighlightMaterial (highlightColor, showEdges);
+        return this.shading.CreateHighlightMaterial (highlightColor, showEdges, opacity);
     }
 
     GetMeshUserDataUnderMouse (mouseCoords)
