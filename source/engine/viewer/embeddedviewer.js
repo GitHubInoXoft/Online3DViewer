@@ -110,6 +110,7 @@ export class EmbeddedViewer
                     message += ' (' + importError.message + ')';
                 }
                 progressDiv.innerHTML = message;
+                callback(message);
             }
         });
     }
