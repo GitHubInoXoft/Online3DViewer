@@ -49,6 +49,20 @@ export class EmbeddedViewer
         });
     }
 
+    ApplyMeshesNames (meshes, threeObject, meshIdx= 0) {
+        if (!threeObject || !threeObject.children.length) return;
+        if (threeObject && threeObject.children && threeObject.children.length) {
+            threeObject.children.forEach((child) => {
+                if (child.type === 'Mesh') {
+                    child.name = meshes[meshIdx].name;
+                    meshIdx++;
+                } else {
+                    this.ApplyMeshesNames(meshes, child, meshIdx);
+                }
+            });
+        }
+    }
+
     LoadModelFromUrls (modelUrls, callback)
     {
         this.viewer.Clear ();
@@ -81,6 +95,7 @@ export class EmbeddedViewer
             onModelFinished : (importResult, threeObject) => {
                 this.parentElement.removeChild (progressDiv);
                 this.canvas.style.display = 'inherit';
+                this.ApplyMeshesNames(importResult.model.meshes, threeObject);
                 this.viewer.SetMainObject (threeObject);
                 let boundingSphere = this.viewer.GetBoundingSphere ((meshUserData) => {
                     return true;
