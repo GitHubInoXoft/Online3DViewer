@@ -171,15 +171,13 @@ export class ShadingModel
         this.directionalLight.position.set (lightDir.x, lightDir.y, lightDir.z);
     }
 
-    CreateHighlightMaterial (highlightColor, withOffset, opacity)
+    CreateHighlightMaterial (highlightColor, withOffset)
     {
         let material = null;
         if (this.type === ShadingType.Phong) {
             material = new THREE.MeshPhongMaterial ({
                 color : highlightColor,
                 side : THREE.DoubleSide,
-                opacity: opacity || 1,
-                transparent: true
             });
         } else if (this.type === ShadingType.Physical) {
             material = new THREE.MeshStandardMaterial ({
@@ -435,7 +433,7 @@ export class Viewer
         this.Render ();
     }
 
-    SetMeshesHighlight (highlightColor, isHighlighted, opacity)
+    SetMeshesHighlight (highlightColor, isHighlighted)
     {
         function CreateHighlightMaterials (originalMaterials, highlightMaterial)
         {
@@ -446,16 +444,27 @@ export class Viewer
             return highlightMaterials;
         }
 
-        const highlightMaterial = this.CreateHighlightMaterial (highlightColor, opacity);
+        const highlightMaterial = this.CreateHighlightMaterial (highlightColor);
         this.geometry.EnumerateMeshes ((mesh) => {
             let highlighted = isHighlighted (mesh.userData);
             if (highlighted) {
                 if (mesh.userData.threeMaterials === null) {
+                    mesh.material.forEach((mesh) => {
+                        highlightMaterial.opacity = mesh.opacity || 1;
+                        highlightMaterial.transparent = mesh.transparent;
+                        highlightMaterial.visible = mesh.visible;
+                    });
                     mesh.userData.threeMaterials = mesh.material;
                     mesh.material = CreateHighlightMaterials (mesh.material, highlightMaterial);
                 }
             } else {
                 if (mesh.userData.threeMaterials !== null) {
+                    mesh.userData.threeMaterials.forEach((userMaterial, idx) => {
+                        const material = mesh.material[idx];
+                        userMaterial.opacity = material.opacity || 1;
+                        userMaterial.transparent = material.transparent;
+                        userMaterial.visible = material.visible;
+                    });
                     mesh.material = mesh.userData.threeMaterials;
                     mesh.userData.threeMaterials = null;
                 }
@@ -465,10 +474,10 @@ export class Viewer
         this.Render ();
     }
 
-    CreateHighlightMaterial (highlightColor, opacity)
+    CreateHighlightMaterial (highlightColor)
     {
         const showEdges = this.geometry.edgeSettings.showEdges;
-        return this.shading.CreateHighlightMaterial (highlightColor, showEdges, opacity);
+        return this.shading.CreateHighlightMaterial (highlightColor, showEdges);
     }
 
     GetMeshUserDataUnderMouse (mouseCoords)
