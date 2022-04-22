@@ -452,7 +452,6 @@ export class Viewer
                     mesh.material.forEach((mesh) => {
                         highlightMaterial.opacity = mesh.opacity || 1;
                         highlightMaterial.transparent = mesh.transparent;
-                        highlightMaterial.visible = mesh.visible;
                     });
                     mesh.userData.threeMaterials = mesh.material;
                     mesh.material = CreateHighlightMaterials (mesh.material, highlightMaterial);
@@ -463,7 +462,6 @@ export class Viewer
                         const material = mesh.material[idx];
                         userMaterial.opacity = material.opacity || 1;
                         userMaterial.transparent = material.transparent;
-                        userMaterial.visible = material.visible;
                     });
                     mesh.material = mesh.userData.threeMaterials;
                     mesh.userData.threeMaterials = null;
