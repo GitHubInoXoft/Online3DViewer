@@ -68,7 +68,34 @@ class Marker
     }
 }
 
-function CalculateMarkerValues (aMarker, bMarker)
+// TODO Angle
+function FindAngle(a, b, c) {
+    function Dist(p1, p2) {
+        return Math.sqrt(
+          Math.pow(p1[0] - p2[0], 2) +
+          Math.pow(p1[1] - p2[1], 2) +
+          Math.pow(p1[2] - p2[2], 2)
+        );
+    }
+
+    function RadiansToDegrees(radians) {
+        return radians * (180 / Math.PI);
+    }
+
+    const aPosition = [a.x, a.y, a.z];
+    const bPosition = [b.x, b.y, b.z];
+    const cPosition = [c.x, c.y, c.z];
+
+    const ab = Dist(aPosition, bPosition);
+    const bc = Dist(bPosition, cPosition);
+    const ac = Dist(aPosition, cPosition);
+
+    const angle = (Math.pow(ab, 2) + Math.pow(bc, 2) - Math.pow(ac, 2)) /
+      (2 * ab * bc);
+    return RadiansToDegrees(Math.acos(angle));
+}
+
+function CalculateMarkerValues (aMarker, bMarker, cMarker=null)
 {
     const aIntersection = aMarker.GetIntersection ();
     const bIntersection = bMarker.GetIntersection ();
@@ -77,6 +104,12 @@ function CalculateMarkerValues (aMarker, bMarker)
         parallelFacesDistance : null,
         facesAngle : null
     };
+
+    if (cMarker) {
+        // TODO Angle
+        // const cIntersection = cMarker.GetIntersection ();
+        // console.log('angle', FindAngle(aIntersection.point, bIntersection.point, cIntersection.point));
+    }
 
     const aNormal = GetFaceWorldNormal (aIntersection);
     const bNormal = GetFaceWorldNormal (bIntersection);
@@ -96,6 +129,7 @@ export class MeasureTool
         this.viewer = viewer;
         this.settings = settings;
         this.isActive = false;
+        this.isEmbedWidget = false;
         this.markers = [];
         this.tempMarker = null;
 
@@ -113,13 +147,20 @@ export class MeasureTool
         return this.isActive;
     }
 
+    SetIsEmbedWidget (isEmbedWidget)
+    {
+        this.isEmbedWidget = isEmbedWidget;
+    }
+
     SetActive (isActive)
     {
         if (this.isActive === isActive) {
             return;
         }
         this.isActive = isActive;
-        this.button.SetSelected (isActive);
+        if (this.button) {
+            this.button.SetSelected (isActive);
+        }
         if (this.isActive) {
             this.panel = AddDiv (document.body, 'ov_measure_panel');
             this.UpdatePanel ();
@@ -139,6 +180,7 @@ export class MeasureTool
             return;
         }
 
+        // TODO Angle. Handle if 3 points
         if (this.markers.length === 2) {
             this.ClearMarkers ();
         }
@@ -169,10 +211,14 @@ export class MeasureTool
     {
         let marker = this.GenerateMarker (intersection);
         this.markers.push (marker);
+        // TODO Angle. Handle if 3 points
         if (this.markers.length === 2) {
             let material = CreateMaterial ();
             let aPoint = this.markers[0].GetIntersection ().point;
             let bPoint = this.markers[1].GetIntersection ().point;
+            // TODO Angle
+            // let cPoint = this.markers[2].GetIntersection ().point;
+            // this.viewer.AddExtraObject (CreateLineFromPoints ([aPoint, bPoint, cPoint], material));
             this.viewer.AddExtraObject (CreateLineFromPoints ([aPoint, bPoint], material));
         }
     }
@@ -189,8 +235,18 @@ export class MeasureTool
         return marker;
     }
 
+    GetDistance ()
+    {
+        if (!this.markers) return null;
+        if (this.markers.length === 2) {
+            return CalculateMarkerValues (this.markers[0], this.markers[1]);
+        }
+        return null;
+    }
+
     UpdatePanel ()
     {
+        if (this.isEmbedWidget) return;
         function AddValue (panel, icon, title, value)
         {
             let svgIcon = AddSvgIconElement (panel, icon, 'left_inline');

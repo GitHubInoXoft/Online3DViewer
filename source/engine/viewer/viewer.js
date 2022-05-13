@@ -6,6 +6,8 @@ import { Camera } from './camera.js';
 import { GetDomElementInnerDimensions } from './domutils.js';
 import { Navigation } from './navigation.js';
 import { ViewerExtraGeometry, ViewerGeometry } from './viewergeometry.js';
+import { MeasureTool } from '../../website/measuretool.js';
+import { Settings } from '../../website/settings.js';
 
 export function GetDefaultCamera (direction)
 {
@@ -210,6 +212,7 @@ export class Viewer
         this.settings = {
             animationSteps : 40
         };
+        this.measureTool = new MeasureTool (this, new Settings());
     }
 
     Init (canvas)
