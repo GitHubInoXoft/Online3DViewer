@@ -239,7 +239,11 @@ export class MeasureTool
     {
         if (!this.markers) return null;
         if (this.markers.length === 2) {
-            return CalculateMarkerValues (this.markers[0], this.markers[1]);
+            const distances = CalculateMarkerValues (this.markers[0], this.markers[1]);
+            return {
+                ...distances,
+                facesAngle: parseInt(distances.facesAngle * (180 / Math.PI)),
+            };
         }
         return null;
     }
