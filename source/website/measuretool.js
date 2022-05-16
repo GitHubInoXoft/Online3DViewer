@@ -68,7 +68,6 @@ class Marker
     }
 }
 
-// TODO Angle
 function FindAngle(a, b, c) {
     function Dist(p1, p2) {
         return Math.sqrt(
@@ -92,7 +91,7 @@ function FindAngle(a, b, c) {
 
     const angle = (Math.pow(ab, 2) + Math.pow(bc, 2) - Math.pow(ac, 2)) /
       (2 * ab * bc);
-    return RadiansToDegrees(Math.acos(angle));
+    return parseInt(RadiansToDegrees(Math.acos(angle)));
 }
 
 function CalculateMarkerValues (aMarker, bMarker, cMarker=null)
@@ -106,9 +105,8 @@ function CalculateMarkerValues (aMarker, bMarker, cMarker=null)
     };
 
     if (cMarker) {
-        // TODO Angle
-        // const cIntersection = cMarker.GetIntersection ();
-        // console.log('angle', FindAngle(aIntersection.point, bIntersection.point, cIntersection.point));
+        const cIntersection = cMarker.GetIntersection ();
+        return FindAngle(aIntersection.point, bIntersection.point, cIntersection.point);
     }
 
     const aNormal = GetFaceWorldNormal (aIntersection);
@@ -129,6 +127,7 @@ export class MeasureTool
         this.viewer = viewer;
         this.settings = settings;
         this.isActive = false;
+        this.isAngleActive = false;
         this.isEmbedWidget = false;
         this.markers = [];
         this.tempMarker = null;
@@ -147,6 +146,11 @@ export class MeasureTool
         return this.isActive;
     }
 
+    IsAngleActive ()
+    {
+        return this.isAngleActive;
+    }
+
     SetIsEmbedWidget (isEmbedWidget)
     {
         this.isEmbedWidget = isEmbedWidget;
@@ -154,6 +158,10 @@ export class MeasureTool
 
     SetActive (isActive)
     {
+        if (this.isAngleActive) {
+            this.ClearMarkers ();
+            this.isAngleActive = false;
+        }
         if (this.isActive === isActive) {
             return;
         }
@@ -171,6 +179,16 @@ export class MeasureTool
         }
     }
 
+    SetAngleActive (isAngleActive)
+    {
+        if (this.isAngleActive === isAngleActive) {
+            return;
+        }
+        this.isActive = isAngleActive;
+        this.isAngleActive = isAngleActive;
+        this.ClearMarkers ();
+    }
+
     Click (mouseCoordinates)
     {
         let intersection = this.viewer.GetMeshIntersectionUnderMouse (mouseCoordinates);
@@ -180,8 +198,7 @@ export class MeasureTool
             return;
         }
 
-        // TODO Angle. Handle if 3 points
-        if (this.markers.length === 2) {
+        if ((!this.isAngleActive && this.markers.length === 2) || this.markers.length === 3) {
             this.ClearMarkers ();
         }
 
@@ -211,15 +228,18 @@ export class MeasureTool
     {
         let marker = this.GenerateMarker (intersection);
         this.markers.push (marker);
-        // TODO Angle. Handle if 3 points
-        if (this.markers.length === 2) {
+        if (!this.isAngleActive && this.markers.length === 2) {
             let material = CreateMaterial ();
             let aPoint = this.markers[0].GetIntersection ().point;
             let bPoint = this.markers[1].GetIntersection ().point;
-            // TODO Angle
-            // let cPoint = this.markers[2].GetIntersection ().point;
-            // this.viewer.AddExtraObject (CreateLineFromPoints ([aPoint, bPoint, cPoint], material));
             this.viewer.AddExtraObject (CreateLineFromPoints ([aPoint, bPoint], material));
+        }
+        if (this.markers.length === 3) {
+            let material = CreateMaterial ();
+            let aPoint = this.markers[0].GetIntersection ().point;
+            let bPoint = this.markers[1].GetIntersection ().point;
+            let cPoint = this.markers[2].GetIntersection ().point;
+            this.viewer.AddExtraObject (CreateLineFromPoints ([aPoint, bPoint, cPoint], material));
         }
     }
 
@@ -238,11 +258,17 @@ export class MeasureTool
     GetDistance ()
     {
         if (!this.markers) return null;
-        if (this.markers.length === 2) {
+        if (!this.isAngleActive && this.markers.length === 2) {
             const distances = CalculateMarkerValues (this.markers[0], this.markers[1]);
             return {
                 ...distances,
                 facesAngle: parseInt(distances.facesAngle * (180 / Math.PI)),
+            };
+        }
+        if (this.markers.length === 3) {
+            const angle = CalculateMarkerValues (this.markers[0], this.markers[1], this.markers[2]);
+            return {
+                facesAngle: angle
             };
         }
         return null;
