@@ -449,18 +449,49 @@ export class Viewer
 
         const highlightMaterial = this.CreateHighlightMaterial (highlightColor);
         this.geometry.EnumerateMeshes ((mesh) => {
-            let highlighted = isHighlighted (mesh.userData);
+            let highlighted = isHighlighted (mesh.userData, mesh);
             if (highlighted) {
-                if (mesh.userData.threeMaterials === null) {
+                if (mesh.userData.threeMaterials === null || mesh.isColor) {
                     mesh.material.forEach((mesh) => {
                         highlightMaterial.opacity = mesh.opacity || 1;
                         highlightMaterial.transparent = mesh.transparent;
                     });
-                    mesh.userData.threeMaterials = mesh.material;
-                    mesh.material = CreateHighlightMaterials (mesh.material, highlightMaterial);
+
+                    if (!mesh.userData.threeMaterials) {
+                        mesh.userData.threeMaterials = mesh.material;
+                    }
+
+                    if (highlightColor) {
+                        if (mesh.isColor && mesh.isSelected) {
+                            mesh.previousColor = mesh.material[0].color;
+                        }
+                        mesh.material = CreateHighlightMaterials (mesh.material, highlightMaterial);
+                    } else {
+                        if (mesh.previousColor) {
+                            mesh.material = CreateHighlightMaterials (
+                              mesh.material,
+                              this.CreateHighlightMaterial(mesh.previousColor));
+                            mesh.previousColor = null;
+                        } else {
+                            mesh.material = CreateHighlightMaterials (
+                              mesh.material,
+                              this.CreateHighlightMaterial(mesh.material[0].color));
+                        }
+                        mesh.material.forEach((mesh) => {
+                            mesh.opacity = highlightMaterial.opacity || 1;
+                            mesh.transparent = highlightMaterial.transparent;
+                        });
+                    }
                 }
             } else {
-                if (mesh.userData.threeMaterials !== null) {
+                if (mesh.isColor && mesh.previousColor) {
+                    mesh.material = CreateHighlightMaterials (
+                      mesh.material,
+                      this.CreateHighlightMaterial(mesh.previousColor));
+                    mesh.previousColor = null;
+                    return;
+                }
+                if (mesh.userData.threeMaterials !== null && !mesh.isColor) {
                     mesh.userData.threeMaterials.forEach((userMaterial, idx) => {
                         const material = mesh.material[idx];
                         userMaterial.opacity = material.opacity || 1;
