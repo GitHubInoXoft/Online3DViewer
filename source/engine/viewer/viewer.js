@@ -489,6 +489,10 @@ export class Viewer
                       mesh.material,
                       this.CreateHighlightMaterial(mesh.previousColor));
                     mesh.previousColor = null;
+                    mesh.userData.threeMaterials.forEach((userMaterial, idx) => {
+                        mesh.material[idx].opacity = userMaterial.opacity || 1;
+                        mesh.material[idx].transparent = userMaterial.transparent;
+                    });
                     return;
                 }
                 if (mesh.userData.threeMaterials !== null && !mesh.isColor) {
