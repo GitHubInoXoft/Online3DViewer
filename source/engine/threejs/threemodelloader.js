@@ -18,9 +18,9 @@ export class ThreeModelLoader
         return this.inProgress;
     }
 
-    LoadModel (files, fileSource, settings, callbacks)
+    LoadModel (files, fileSource, settings, callbacks, isUploaded)
     {
-        if (this.inProgress) {
+        if (!isUploaded && this.inProgress) {
             return;
         }
 
@@ -64,7 +64,7 @@ export class ThreeModelLoader
                 callbacks.onLoadError (importError);
                 this.inProgress = false;
             }
-        });
+        }, isUploaded);
     }
 
     GetImporter ()

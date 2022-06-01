@@ -126,14 +126,36 @@ export class Importer
 		this.importers.push (importer);
 	}
 
-    ImportFiles (fileList, fileSource, settings, callbacks)
+    GetFilesFromZipFile (modelUrls)
     {
-        this.LoadFiles (fileList, fileSource, () => {
+        return new Promise((resolve) => {
+            let newFileList = new FileList ();
+            newFileList.FillFromFileUrls (modelUrls);
+            newFileList.GetContent (() => {
+                this.DecompressArchives (newFileList, () => {
+                    resolve(newFileList.files);
+                });
+            });
+        });
+    }
+
+    ImportFiles (fileList, fileSource, settings, callbacks, isUploaded)
+    {
+        if (isUploaded) {
+            this.fileList = new FileList ();
+            this.fileList.files = fileList;
             callbacks.onFilesLoaded ();
             RunTaskAsync (() => {
                 this.ImportLoadedFiles (settings, callbacks);
             });
-        });
+        } else {
+            this.LoadFiles (fileList, fileSource, () => {
+                callbacks.onFilesLoaded ();
+                RunTaskAsync (() => {
+                    this.ImportLoadedFiles (settings, callbacks);
+                });
+            });
+        }
     }
 
     LoadFiles (fileList, fileSource, onReady)

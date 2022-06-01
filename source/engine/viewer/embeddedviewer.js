@@ -1,6 +1,6 @@
 import { IsDefined } from '../core/core.js';
 import { Direction } from '../geometry/geometry.js';
-import { ImportErrorCode, ImportSettings } from '../import/importer.js';
+import { Importer, ImportErrorCode, ImportSettings } from '../import/importer.js';
 import { FileSource, TransformFileHostUrls } from '../io/fileutils.js';
 import { ParameterConverter } from '../parameters/parameterlist.js';
 import { ThreeModelLoader } from '../threejs/threemodelloader.js';
@@ -49,10 +49,70 @@ export class EmbeddedViewer
         });
     }
 
-    LoadModelFromUrls (modelUrls, callback)
+    LoadModel (url, isUploaded)
+    {
+        return new Promise((resolve, reject) => {
+            let loader = new ThreeModelLoader ();
+            let settings = new ImportSettings ();
+
+            if (this.parameters.defaultColor) {
+                settings.defaultColor = this.parameters.defaultColor;
+            }
+
+            loader.LoadModel ([url], FileSource.Url, settings, {
+                onLoadStart : () => {
+                    console.log('onLoadStart');
+                    this.canvas.style.display = 'none';
+                },
+                onImportStart : () => {
+                    console.log('onImportStart');
+                },
+                onVisualizationStart : () => {
+                    console.log('onVisualizationStart');
+                },
+                onModelFinished : (importResult, threeObject) => {
+                    console.log('onModelFinished');
+                    this.canvas.style.display = 'inherit';
+                    this.viewer.SetMainObject (threeObject);
+                    let boundingSphere = this.viewer.GetBoundingSphere (() => {
+                        return true;
+                    });
+                    this.viewer.AdjustClippingPlanesToSphere (boundingSphere);
+                    if (this.parameters.camera) {
+                        this.viewer.SetCamera (this.parameters.camera);
+                    } else {
+                        this.viewer.SetUpVector (Direction.Y, false);
+                    }
+                    this.viewer.FitSphereToWindow (boundingSphere, false);
+                    this.viewer.meshesNames = importResult.model.meshes.map((mesh) => mesh.name);
+                    resolve();
+                },
+                onTextureLoaded : () => {
+                    console.log('onTextureLoaded');
+                    this.viewer.Render ();
+                },
+                onLoadError : (importError) => {
+                    console.log('onLoadError');
+                    let message = 'Unknown error';
+                    if (importError.code === ImportErrorCode.NoImportableFile) {
+                        message = 'No importable file found';
+                    } else if (importError.code === ImportErrorCode.FailedToLoadFile) {
+                        message = 'Failed to load file for import.';
+                    } else if (importError.code === ImportErrorCode.ImportFailed) {
+                        message = 'Failed to import model.';
+                    }
+                    if (importError.message !== null) {
+                        message += ' (' + importError.message + ')';
+                    }
+                    reject(message);
+                }
+            }, isUploaded);
+        });
+    }
+
+    async LoadModelFromUrls (modelUrls, callback)
     {
         this.viewer.Clear ();
-
         if (modelUrls === null || modelUrls.length === 0) {
             return null;
         }
@@ -63,57 +123,16 @@ export class EmbeddedViewer
             settings.defaultColor = this.parameters.defaultColor;
         }
 
-        let progressDiv = null;
-        let loader = new ThreeModelLoader ();
-        loader.LoadModel (modelUrls, FileSource.Url, settings, {
-            onLoadStart : () => {
-                this.canvas.style.display = 'none';
-                progressDiv = document.createElement ('div');
-                progressDiv.innerHTML = 'Loading model...';
-                this.parentElement.appendChild (progressDiv);
-            },
-            onImportStart : () => {
-                progressDiv.innerHTML = 'Importing model...';
-            },
-            onVisualizationStart : () => {
-                progressDiv.innerHTML = 'Visualizing model...';
-            },
-            onModelFinished : (importResult, threeObject) => {
-                this.parentElement.removeChild (progressDiv);
-                this.canvas.style.display = 'inherit';
-                this.viewer.SetMainObject (threeObject);
-                let boundingSphere = this.viewer.GetBoundingSphere ((meshUserData) => {
-                    return true;
-                });
-                this.viewer.AdjustClippingPlanesToSphere (boundingSphere);
-                if (this.parameters.camera) {
-                    this.viewer.SetCamera (this.parameters.camera);
-                } else {
-                    this.viewer.SetUpVector (Direction.Y, false);
-                }
-                this.viewer.FitSphereToWindow (boundingSphere, false);
-                this.viewer.meshesNames = importResult.model.meshes.map((mesh) => mesh.name);
+        const importer = new Importer ();
+        const files = await importer.GetFilesFromZipFile(modelUrls);
+
+        for (const [i, file] of files.entries()) {
+            if (file.extension === 'zip') continue;
+            await this.LoadModel(file, true);
+            if (i === files.length-1) {
                 callback();
-            },
-            onTextureLoaded : () => {
-                this.viewer.Render ();
-            },
-            onLoadError : (importError) => {
-                let message = 'Unknown error';
-                if (importError.code === ImportErrorCode.NoImportableFile) {
-                    message = 'No importable file found';
-                } else if (importError.code === ImportErrorCode.FailedToLoadFile) {
-                    message = 'Failed to load file for import.';
-                } else if (importError.code === ImportErrorCode.ImportFailed) {
-                    message = 'Failed to import model.';
-                }
-                if (importError.message !== null) {
-                    message += ' (' + importError.message + ')';
-                }
-                progressDiv.innerHTML = message;
-                callback(message);
             }
-        });
+        }
     }
 
     GetViewer ()
