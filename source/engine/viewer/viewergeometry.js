@@ -36,7 +36,8 @@ export class ViewerGeometry
 
     SetMainObject (mainObject)
     {
-        this.mainObject = mainObject;
+        this.mainObject = new THREE.Group();
+        this.mainObject.add(mainObject);
         this.scene.add (this.mainObject);
         if (this.edgeSettings.showEdges) {
             this.GenerateMainEdgeObject ();
@@ -212,6 +213,13 @@ export class ViewerGeometry
         }
 
         return null;
+    }
+
+    AddObject (object) {
+        if (this.mainObject === null) {
+            return;
+        }
+        this.mainObject.add(object);
     }
 }
 

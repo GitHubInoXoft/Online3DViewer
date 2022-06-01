@@ -49,7 +49,7 @@ export class EmbeddedViewer
         });
     }
 
-    LoadModel (url, isUploaded)
+    LoadModel (url, isAddingObject, isUploaded)
     {
         return new Promise((resolve, reject) => {
             let loader = new ThreeModelLoader ();
@@ -71,8 +71,17 @@ export class EmbeddedViewer
                     console.log('onVisualizationStart');
                 },
                 onModelFinished : (importResult, threeObject) => {
-                    console.log('onModelFinished');
+                    console.log('onModelFinished (importResult, threeObject)', importResult, threeObject);
                     this.canvas.style.display = 'inherit';
+                    if (isAddingObject) {
+                        this.viewer.AddObjectToMain(threeObject);
+                        this.viewer.meshesNames = [
+                            ...this.viewer.meshesNames,
+                            ...importResult.model.meshes.map((mesh) => mesh.name)
+                        ];
+                        resolve();
+                        return;
+                    }
                     this.viewer.SetMainObject (threeObject);
                     let boundingSphere = this.viewer.GetBoundingSphere (() => {
                         return true;
@@ -125,10 +134,12 @@ export class EmbeddedViewer
 
         const importer = new Importer ();
         const files = await importer.GetFilesFromZipFile(modelUrls);
+        let isAddingObject = false;
 
         for (const [i, file] of files.entries()) {
             if (file.extension === 'zip') continue;
-            await this.LoadModel(file, true);
+            await this.LoadModel(file, isAddingObject, true);
+            isAddingObject = true;
             if (i === files.length-1) {
                 callback();
             }

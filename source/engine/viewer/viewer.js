@@ -406,6 +406,12 @@ export class Viewer
         this.Render ();
     }
 
+    AddObjectToMain (object)
+    {
+        this.geometry.AddObject (object);
+        this.Render();
+    }
+
     Clear ()
     {
         this.geometry.Clear ();
