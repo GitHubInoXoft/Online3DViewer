@@ -49,8 +49,19 @@ export class EmbeddedViewer
         });
     }
 
-    LoadModel (url, isAddingObject, isUploaded)
+    LoadModel (file, isAddingObject, isUploaded)
     {
+        function setFileNameToMeshes (object, fileName)
+        {
+            object.children.forEach((child) => {
+                if (child.type === 'Mesh') {
+                    child.fileName = fileName;
+                } else {
+                    setFileNameToMeshes(child, fileName);
+                }
+            });
+        }
+
         return new Promise((resolve, reject) => {
             let loader = new ThreeModelLoader ();
             let settings = new ImportSettings ();
@@ -59,7 +70,7 @@ export class EmbeddedViewer
                 settings.defaultColor = this.parameters.defaultColor;
             }
 
-            loader.LoadModel ([url], FileSource.Url, settings, {
+            loader.LoadModel ([file], FileSource.Url, settings, {
                 onLoadStart : () => {
                     console.log('onLoadStart');
                     this.canvas.style.display = 'none';
@@ -73,6 +84,12 @@ export class EmbeddedViewer
                 onModelFinished : (importResult, threeObject) => {
                     console.log('onModelFinished (importResult, threeObject)', importResult, threeObject);
                     this.canvas.style.display = 'inherit';
+
+                    if (isUploaded) {
+                        threeObject.name = file.name;
+                        setFileNameToMeshes(threeObject, file.name);
+                    }
+
                     if (isAddingObject) {
                         this.viewer.AddObjectToMain(threeObject);
                         this.viewer.meshesNames = [
