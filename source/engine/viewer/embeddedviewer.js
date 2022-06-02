@@ -51,13 +51,14 @@ export class EmbeddedViewer
 
     LoadModel (file, isAddingObject, isUploaded)
     {
-        function setFileNameToMeshes (object, fileName)
+        function setFileNameToMeshes (object, fileName, fileId)
         {
             object.children.forEach((child) => {
                 if (child.type === 'Mesh') {
                     child.fileName = fileName;
+                    child.fileId = fileId;
                 } else {
-                    setFileNameToMeshes(child, fileName);
+                    setFileNameToMeshes(child, fileName, fileId);
                 }
             });
         }
@@ -87,7 +88,7 @@ export class EmbeddedViewer
 
                     if (isUploaded) {
                         threeObject.name = file.name;
-                        setFileNameToMeshes(threeObject, file.name);
+                        setFileNameToMeshes(threeObject, file.name, threeObject.id);
                     }
 
                     if (isAddingObject) {
