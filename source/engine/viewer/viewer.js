@@ -528,7 +528,10 @@ export class Viewer
         if (intersection === null) {
             return null;
         }
-        return intersection.object.userData;
+        return {
+            ...intersection.object.userData,
+            uuid: intersection.object.uuid
+        };
     }
 
     GetMeshIntersectionUnderMouse (mouseCoords)
