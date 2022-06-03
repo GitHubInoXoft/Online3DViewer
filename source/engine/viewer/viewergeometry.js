@@ -107,7 +107,7 @@ export class ViewerGeometry
         let hasMesh = false;
         let boundingBox = new THREE.Box3 ();
         this.EnumerateMeshes ((mesh) => {
-            if (needToProcess (mesh.userData)) {
+            if (needToProcess (mesh.userData, mesh)) {
                 boundingBox.union (new THREE.Box3 ().setFromObject (mesh));
                 hasMesh = true;
             }
