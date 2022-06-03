@@ -137,7 +137,7 @@ export class EmbeddedViewer
         });
     }
 
-    async LoadModelFromUrls (modelUrls, callback)
+    async LoadModelFromUrls (modelUrls, extension, callback)
     {
         this.viewer.Clear ();
         if (modelUrls === null || modelUrls.length === 0) {
@@ -145,21 +145,25 @@ export class EmbeddedViewer
         }
         TransformFileHostUrls (modelUrls);
 
-        let settings = new ImportSettings ();
-        if (this.parameters.defaultColor) {
-            settings.defaultColor = this.parameters.defaultColor;
-        }
+        if (extension === 'zip') {
+            const importer = new Importer ();
+            const files = await importer.GetFilesFromZipFile(modelUrls);
+            let isAddingObject = false;
 
-        const importer = new Importer ();
-        const files = await importer.GetFilesFromZipFile(modelUrls);
-        let isAddingObject = false;
-
-        for (const [i, file] of files.entries()) {
-            if (file.extension === 'zip') continue;
-            await this.LoadModel(file, isAddingObject, true);
-            isAddingObject = true;
-            if (i === files.length-1) {
+            for (const [i, file] of files.entries()) {
+                if (file.extension === 'zip') continue;
+                await this.LoadModel(file, isAddingObject, true);
+                isAddingObject = true;
+                if (i === files.length-1) {
+                    callback();
+                }
+            }
+        } else {
+            try {
+                await this.LoadModel(modelUrls[0], false, false);
                 callback();
+            } catch (e) {
+                callback(e);
             }
         }
     }
