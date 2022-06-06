@@ -51,7 +51,7 @@ export class EmbeddedViewer
 
     LoadModel (file, isAddingObject, isUploaded)
     {
-        function setFileNameToMeshes (object, fileName, fileId)
+        const setFileNameToMeshes = (object, fileName, fileId) =>
         {
             object.children.forEach((child) => {
                 if (child.type === 'Mesh') {
@@ -61,7 +61,21 @@ export class EmbeddedViewer
                     setFileNameToMeshes(child, fileName, fileId);
                 }
             });
-        }
+        };
+
+        const generateTreeList = (data) =>
+        {
+            if (!data || !data.childNodes.length) return [];
+            const arr = [];
+            data.childNodes.forEach((child) => {
+                arr.push({
+                    title: child.name,
+                    key: child.id,
+                    children: generateTreeList(child),
+                });
+            });
+            return arr;
+        };
 
         return new Promise((resolve, reject) => {
             let loader = new ThreeModelLoader ();
@@ -112,6 +126,7 @@ export class EmbeddedViewer
                     }
                     this.viewer.FitSphereToWindow (boundingSphere, false);
                     this.viewer.meshesNames = importResult.model.meshes.map((mesh) => mesh.name);
+                    this.viewer.treeList = generateTreeList(importResult.model.root);
                     resolve();
                 },
                 onTextureLoaded : () => {
