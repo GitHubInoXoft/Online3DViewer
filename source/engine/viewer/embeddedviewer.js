@@ -51,6 +51,12 @@ export class EmbeddedViewer
 
     LoadModel (file, isAddingObject, isUploaded)
     {
+        const uuidv4 = () => {
+            return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+              (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+            );
+        };
+
         const setFileNameToMeshes = (object, fileName, fileId) =>
         {
             object.children.forEach((child) => {
@@ -63,17 +69,30 @@ export class EmbeddedViewer
             });
         };
 
-        const generateTreeList = (data) =>
+        const generateTreeList = (data, fileName) =>
         {
             if (!data || !data.childNodes.length) return [];
             const arr = [];
             data.childNodes.forEach((child) => {
                 arr.push({
                     title: child.name,
-                    key: child.id,
+                    id: child.id,
+                    key: uuidv4(),
                     children: generateTreeList(child),
                 });
             });
+
+            if (fileName) {
+                return [
+                  {
+                      title: fileName,
+                      id: uuidv4(),
+                      key: uuidv4(),
+                      children: arr
+                  }
+                ];
+            }
+
             return arr;
         };
 
@@ -111,6 +130,10 @@ export class EmbeddedViewer
                             ...this.viewer.meshesNames,
                             ...importResult.model.meshes.map((mesh) => mesh.name)
                         ];
+                        this.viewer.treeList = [
+                          ...this.viewer.treeList,
+                          ...generateTreeList(importResult.model.root, file.name)
+                        ];
                         resolve();
                         return;
                     }
@@ -126,7 +149,7 @@ export class EmbeddedViewer
                     }
                     this.viewer.FitSphereToWindow (boundingSphere, false);
                     this.viewer.meshesNames = importResult.model.meshes.map((mesh) => mesh.name);
-                    this.viewer.treeList = generateTreeList(importResult.model.root);
+                    this.viewer.treeList = generateTreeList(importResult.model.root, isUploaded && file.name);
                     resolve();
                 },
                 onTextureLoaded : () => {
