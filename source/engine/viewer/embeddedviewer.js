@@ -74,13 +74,19 @@ export class EmbeddedViewer
             if (!data || !data.childNodes.length) return [];
             const treeList = [];
 
+            const defaultAttrs = {
+                visible: true,
+                transparent: false,
+                opacity: 1
+            };
+
             data.childNodes.forEach((child) => {
                 let obj = {
                     title: child.name,
                     key: uuidv4(),
                     type: child.type,
                     children: generateTreeList(child, null, meshes, meshesNames),
-                    isVisible: true
+                    ...defaultAttrs
                 };
 
                 if (child.type === 1) {
@@ -102,8 +108,8 @@ export class EmbeddedViewer
                       title: fileName,
                       key: uuidv4(),
                       type: 0,
-                      isVisible: true,
-                      children: treeList
+                      children: treeList,
+                      ...defaultAttrs
                   }
                 ];
             }
