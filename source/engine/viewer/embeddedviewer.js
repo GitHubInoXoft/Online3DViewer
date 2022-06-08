@@ -69,31 +69,46 @@ export class EmbeddedViewer
             });
         };
 
-        const generateTreeList = (data, fileName) =>
+        const generateTreeList = (data, fileName, meshes, meshesNames) =>
         {
             if (!data || !data.childNodes.length) return [];
-            const arr = [];
+            const treeList = [];
+
             data.childNodes.forEach((child) => {
-                arr.push({
+                let obj = {
                     title: child.name,
-                    id: child.id,
                     key: uuidv4(),
-                    children: generateTreeList(child),
-                });
+                    type: child.type,
+                    children: generateTreeList(child, null, meshes, meshesNames),
+                    isVisible: true
+                };
+
+                if (child.type === 1) {
+                    obj = {
+                        ...meshes[0],
+                        ...obj,
+                        name: meshesNames[0]
+                    };
+                    meshes = meshes.shift();
+                    meshesNames = meshesNames.shift();
+                }
+
+                treeList.push(obj);
             });
 
             if (fileName) {
                 return [
                   {
                       title: fileName,
-                      id: uuidv4(),
                       key: uuidv4(),
-                      children: arr
+                      type: 0,
+                      isVisible: true,
+                      children: treeList
                   }
                 ];
             }
 
-            return arr;
+            return treeList;
         };
 
         return new Promise((resolve, reject) => {
@@ -124,6 +139,13 @@ export class EmbeddedViewer
                         setFileNameToMeshes(threeObject, file.name, threeObject.id);
                     }
 
+                    let meshes = [];
+                    threeObject.traverse ((obj) => {
+                        if (obj.isMesh) {
+                            meshes.push(obj);
+                        }
+                    });
+
                     if (isAddingObject) {
                         this.viewer.AddObjectToMain(threeObject);
                         this.viewer.meshesNames = [
@@ -132,11 +154,17 @@ export class EmbeddedViewer
                         ];
                         this.viewer.treeList = [
                           ...this.viewer.treeList,
-                          ...generateTreeList(importResult.model.root, file.name)
+                          ...generateTreeList(
+                            importResult.model.root,
+                            file.name,
+                            [...meshes],
+                            [...this.viewer.meshesNames]
+                          ),
                         ];
                         resolve();
                         return;
                     }
+
                     this.viewer.SetMainObject (threeObject);
                     let boundingSphere = this.viewer.GetBoundingSphere (() => {
                         return true;
@@ -149,7 +177,12 @@ export class EmbeddedViewer
                     }
                     this.viewer.FitSphereToWindow (boundingSphere, false);
                     this.viewer.meshesNames = importResult.model.meshes.map((mesh) => mesh.name);
-                    this.viewer.treeList = generateTreeList(importResult.model.root, isUploaded && file.name);
+                    this.viewer.treeList = generateTreeList(
+                      importResult.model.root,
+                      isUploaded && file.name,
+                      [...meshes],
+                      [...this.viewer.meshesNames]
+                    );
                     resolve();
                 },
                 onTextureLoaded : () => {
