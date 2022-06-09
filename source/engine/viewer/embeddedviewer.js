@@ -49,14 +49,67 @@ export class EmbeddedViewer
         });
     }
 
-    LoadModel (file, isAddingObject, isUploaded)
+    Uuidv4 ()
     {
-        const uuidv4 = () => {
-            return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
-              (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
-            );
+        return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+          (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+        );
+    }
+
+    GenerateTreeList (data, fileName, meshes, meshesNames)
+    {
+        if (!data || !data.childNodes.length) return [];
+
+        const treeList = [];
+        const defaultAttrs = {
+            visible: true,
+            transparent: false,
+            opacity: 1
         };
 
+
+        data.childNodes.forEach((child) => {
+            let obj = {};
+
+            if (child.type === 1) {
+                obj = meshes[this.viewer.treeMeshsesNumber];
+                obj.name = meshesNames[this.viewer.treeMeshsesNumber];
+
+                this.viewer.treeMeshsesNumber++;
+
+                obj.title = child.name;
+                obj.key = this.Uuidv4();
+                obj.children = [];
+            } else {
+                obj = {
+                    title: child.name,
+                    key: this.Uuidv4(),
+                    type: 'Group',
+                    children: this.GenerateTreeList(child, null, meshes, meshesNames),
+                    ...defaultAttrs,
+                };
+            }
+
+            treeList.push(obj);
+        });
+
+        if (fileName) {
+            return [
+                {
+                    title: fileName,
+                    key: this.Uuidv4(),
+                    type: 'Group',
+                    children: treeList,
+                    ...defaultAttrs
+                }
+            ];
+        }
+
+        return treeList;
+    }
+
+    LoadModel (file, isAddingObject, isUploaded)
+    {
         const setFileNameToMeshes = (object, fileName, fileId) =>
         {
             object.children.forEach((child) => {
@@ -69,53 +122,7 @@ export class EmbeddedViewer
             });
         };
 
-        const generateTreeList = (data, fileName, meshes, meshesNames) =>
-        {
-            if (!data || !data.childNodes.length) return [];
-            const treeList = [];
-
-            const defaultAttrs = {
-                visible: true,
-                transparent: false,
-                opacity: 1
-            };
-
-            data.childNodes.forEach((child) => {
-                let obj = {
-                    title: child.name,
-                    key: uuidv4(),
-                    type: child.type,
-                    children: generateTreeList(child, null, meshes, meshesNames),
-                    ...defaultAttrs
-                };
-
-                if (child.type === 1) {
-                    obj = {
-                        ...meshes[0],
-                        ...obj,
-                        name: meshesNames[0]
-                    };
-                    meshes = meshes.shift();
-                    meshesNames = meshesNames.shift();
-                }
-
-                treeList.push(obj);
-            });
-
-            if (fileName) {
-                return [
-                  {
-                      title: fileName,
-                      key: uuidv4(),
-                      type: 0,
-                      children: treeList,
-                      ...defaultAttrs
-                  }
-                ];
-            }
-
-            return treeList;
-        };
+        this.viewer.treeMeshsesNumber = 0;
 
         return new Promise((resolve, reject) => {
             let loader = new ThreeModelLoader ();
@@ -145,22 +152,24 @@ export class EmbeddedViewer
                         setFileNameToMeshes(threeObject, file.name, threeObject.id);
                     }
 
-                    let meshes = [];
-                    threeObject.traverse ((obj) => {
-                        if (obj.isMesh) {
-                            meshes.push(obj);
-                        }
-                    });
-
                     if (isAddingObject) {
                         this.viewer.AddObjectToMain(threeObject);
                         this.viewer.meshesNames = [
                             ...this.viewer.meshesNames,
                             ...importResult.model.meshes.map((mesh) => mesh.name)
                         ];
+                        let meshes = [];
+                        let meshIdx = 0;
+                        this.viewer.geometry.EnumerateMeshes((mesh) => {
+                            if (meshIdx > this.viewer.lastMeshIdx) {
+                                meshes.push(mesh);
+                                this.viewer.lastMeshIdx++;
+                            }
+                            meshIdx++;
+                        });
                         this.viewer.treeList = [
                           ...this.viewer.treeList,
-                          ...generateTreeList(
+                          ...this.GenerateTreeList(
                             importResult.model.root,
                             file.name,
                             [...meshes],
@@ -183,10 +192,15 @@ export class EmbeddedViewer
                     }
                     this.viewer.FitSphereToWindow (boundingSphere, false);
                     this.viewer.meshesNames = importResult.model.meshes.map((mesh) => mesh.name);
-                    this.viewer.treeList = generateTreeList(
+                    let meshes = [];
+                    this.viewer.geometry.EnumerateMeshes((mesh) => {
+                        meshes.push(mesh);
+                    });
+                    this.viewer.lastMeshIdx = meshes.length - 1;
+                    this.viewer.treeList = this.GenerateTreeList(
                       importResult.model.root,
                       isUploaded && file.name,
-                      [...meshes],
+                      meshes,
                       [...this.viewer.meshesNames]
                     );
                     resolve();
