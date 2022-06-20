@@ -7,6 +7,7 @@ import { GetDomElementInnerDimensions } from './domutils.js';
 import { Navigation } from './navigation.js';
 import { ViewerExtraGeometry, ViewerGeometry } from './viewergeometry.js';
 import { MeasureTool } from '../../website/measuretool.js';
+import { MovingTool } from '../../website/movingtool.js';
 import { Settings } from '../../website/settings.js';
 
 export function GetDefaultCamera (direction)
@@ -213,6 +214,7 @@ export class Viewer
             animationSteps : 40
         };
         this.measureTool = new MeasureTool (this, new Settings());
+        this.movingTool = null;
     }
 
     Init (canvas)
@@ -235,6 +237,8 @@ export class Viewer
         this.scene = new THREE.Scene ();
         this.geometry = new ViewerGeometry (this.scene);
         this.extraGeometry = new ViewerExtraGeometry (this.scene);
+
+        this.movingTool = new MovingTool (this, this.scene);
 
         this.InitNavigation ();
         this.InitShading ();
@@ -558,6 +562,13 @@ export class Viewer
     {
         this.geometry.EnumerateMeshes ((mesh) => {
             enumerator (mesh.userData);
+        });
+    }
+
+    EnumerateMeshesData (enumerator)
+    {
+        this.geometry.EnumerateMeshes ((mesh) => {
+            enumerator (mesh);
         });
     }
 
