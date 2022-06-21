@@ -165,6 +165,18 @@ export class ViewerGeometry
         this.mainEdgeObject = null;
     }
 
+    Aaa ()
+    {
+        this.mainObject.position.set(0, 0, 0);
+    }
+
+    Bbb ()
+    {
+        this.EnumerateMeshes((mesh) => {
+            mesh.geometry.center();
+        });
+    }
+
     EnumerateMeshes (enumerator)
     {
         if (this.mainObject === null) {
