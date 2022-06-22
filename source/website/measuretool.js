@@ -117,6 +117,7 @@ function CalculateMarkerValues (aMarker, bMarker, cMarker=null)
         let aPlane = new THREE.Plane ().setFromNormalAndCoplanarPoint (aNormal, aIntersection.point);
         result.parallelFacesDistance = Math.abs (aPlane.distanceToPoint (bIntersection.point));
     }
+    result.facesAngle = 0;
     return result;
 }
 
