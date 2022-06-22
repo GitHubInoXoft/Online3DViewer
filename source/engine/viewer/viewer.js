@@ -277,6 +277,12 @@ export class Viewer
         this.Render ();
     }
 
+    SetBackgroundColorHex (hexColor)
+    {
+        this.renderer.setClearColor (hexColor, 1.0);
+        this.Render ();
+    }
+
     SetEdgeSettings (show, color, threshold)
     {
         this.geometry.SetEdgeSettings (show, color, threshold);
