@@ -108,7 +108,7 @@ export class EmbeddedViewer
         return treeList;
     }
 
-    LoadModel (file, isAddingObject, isUploaded)
+    LoadModel (files, isAddingObject, isUploaded)
     {
         const setFileNameToMeshes = (object, fileName, fileId) =>
         {
@@ -132,7 +132,7 @@ export class EmbeddedViewer
                 settings.defaultColor = this.parameters.defaultColor;
             }
 
-            loader.LoadModel ([file], FileSource.Url, settings, {
+            loader.LoadModel (files, FileSource.Url, settings, {
                 onLoadStart : () => {
                     console.log('onLoadStart');
                     this.canvas.style.display = 'none';
@@ -148,8 +148,8 @@ export class EmbeddedViewer
                     this.canvas.style.display = 'inherit';
 
                     if (isUploaded) {
-                        threeObject.name = file.name;
-                        setFileNameToMeshes(threeObject, file.name, threeObject.id);
+                        threeObject.name = files[0].name;
+                        setFileNameToMeshes(threeObject, files[0].name, threeObject.id);
                     }
 
                     if (isAddingObject) {
@@ -171,7 +171,7 @@ export class EmbeddedViewer
                           ...this.viewer.treeList,
                           ...this.GenerateTreeList(
                             importResult.model.root,
-                            file.name,
+                            files[0].name,
                             [...meshes],
                             [...this.viewer.meshesNames]
                           ),
@@ -199,7 +199,7 @@ export class EmbeddedViewer
                     this.viewer.lastMeshIdx = meshes.length - 1;
                     this.viewer.treeList = this.GenerateTreeList(
                       importResult.model.root,
-                      isUploaded && file.name,
+                      isUploaded && files[0].name,
                       meshes,
                       [...this.viewer.meshesNames]
                     );
@@ -236,26 +236,33 @@ export class EmbeddedViewer
         }
         TransformFileHostUrls (modelUrls);
 
-        if (extension === 'zip') {
-            const importer = new Importer ();
-            const files = await importer.GetFilesFromZipFile(modelUrls);
-            let isAddingObject = false;
+        try {
+            if (extension === 'zip') {
+                const importer = new Importer ();
+                const files = await importer.GetFilesFromZipFile(modelUrls);
+                let isAddingObject = false;
 
-            for (const [i, file] of files.entries()) {
-                if (file.extension === 'zip') continue;
-                await this.LoadModel(file, isAddingObject, true);
-                isAddingObject = true;
-                if (i === files.length-1) {
+                const isTexture = !!files.find(file => !['stl', 'obj', '3mf', 'zip'].includes(file.extension));
+
+                if (isTexture) {
+                    await this.LoadModel(modelUrls, false, false);
                     callback();
+                } else {
+                    for (const [i, file] of files.entries()) {
+                        if (file.extension === 'zip') continue;
+                        await this.LoadModel([file], isAddingObject, true);
+                        isAddingObject = true;
+                        if (i === files.length-1) {
+                            callback();
+                        }
+                    }
                 }
-            }
-        } else {
-            try {
-                await this.LoadModel(modelUrls[0], false, false);
+            } else {
+                await this.LoadModel(modelUrls, false, false);
                 callback();
-            } catch (e) {
-                callback(e);
             }
+        } catch (e) {
+            callback(e);
         }
     }
 
