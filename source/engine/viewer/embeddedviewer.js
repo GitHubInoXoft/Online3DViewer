@@ -21,6 +21,7 @@ export class EmbeddedViewer
 
         this.viewer = new Viewer ();
         this.viewer.Init (this.canvas);
+        this.percent = 0;
 
         let width = this.parentElement.clientWidth;
         let height = this.parentElement.clientHeight;
@@ -108,7 +109,7 @@ export class EmbeddedViewer
         return treeList;
     }
 
-    LoadModel (files, isAddingObject, isUploaded)
+    LoadModel (files, isAddingObject, isUploaded, availablePercent, callback)
     {
         const setFileNameToMeshes = (object, fileName, fileId) =>
         {
@@ -132,16 +133,27 @@ export class EmbeddedViewer
                 settings.defaultColor = this.parameters.defaultColor;
             }
 
+            const fileName = files[0].name;
+
             loader.LoadModel (files, FileSource.Url, settings, {
                 onLoadStart : () => {
                     console.log('onLoadStart');
+                    this.percent += availablePercent;
+                    if (isUploaded) callback({text: `Loading model "${fileName}" ...`, percent: this.percent});
+                    else callback({text: 'Loading model...', percent: this.percent});
                     this.canvas.style.display = 'none';
                 },
                 onImportStart : () => {
                     console.log('onImportStart');
+                    this.percent += availablePercent;
+                    if (isUploaded) callback({text: `Importing model "${fileName}" ...`, percent: this.percent});
+                    else callback({text: 'Importing model...', percent: this.percent});
                 },
                 onVisualizationStart : () => {
                     console.log('onVisualizationStart');
+                    this.percent += availablePercent;
+                    if (isUploaded) callback({text: `Visualizing model "${fileName}" ...`, percent: this.percent});
+                    else callback({text: 'Visualizing model...', percent: this.percent});
                 },
                 onModelFinished : (importResult, threeObject) => {
                     console.log('onModelFinished (importResult, threeObject)', importResult, threeObject);
@@ -236,8 +248,15 @@ export class EmbeddedViewer
         }
         TransformFileHostUrls (modelUrls);
 
+        this.percent = 20;
+        let availablePercent = 80;
+        let percentSteps = 3;
+
         try {
             if (extension === 'zip') {
+                availablePercent -= 10;
+                this.percent += 10;
+                callback({text: 'Excluding files from a zip archive', percent: this.percent});
                 const importer = new Importer ();
                 const files = await importer.GetFilesFromZipFile(modelUrls);
                 let isAddingObject = false;
@@ -245,12 +264,20 @@ export class EmbeddedViewer
                 const isTexture = !!files.find(file => !['stl', 'obj', '3mf', 'zip'].includes(file.extension));
 
                 if (isTexture) {
-                    await this.LoadModel(modelUrls, false, false);
+                    await this.LoadModel(
+                      modelUrls,
+                      false,
+                      false,
+                      Math.floor(availablePercent / percentSteps),
+                      callback
+                    );
                     callback();
                 } else {
+                    const amount3dFiles = files.filter(file => ['obj', '3mf', 'stl'].includes(file.extension)).length;
+                    availablePercent = Math.floor((availablePercent / amount3dFiles) / percentSteps);
                     for (const [i, file] of files.entries()) {
                         if (file.extension === 'zip') continue;
-                        await this.LoadModel([file], isAddingObject, true);
+                        await this.LoadModel([file], isAddingObject, true, availablePercent, callback);
                         isAddingObject = true;
                         if (i === files.length-1) {
                             callback();
@@ -258,11 +285,17 @@ export class EmbeddedViewer
                     }
                 }
             } else {
-                await this.LoadModel(modelUrls, false, false);
+                await this.LoadModel(
+                  modelUrls,
+                  false,
+                  false,
+                  Math.floor(availablePercent / percentSteps),
+                  callback
+                );
                 callback();
             }
         } catch (e) {
-            callback(e);
+            callback(null, e);
         }
     }
 
