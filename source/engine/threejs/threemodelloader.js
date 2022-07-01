@@ -19,7 +19,7 @@ export class ThreeModelLoader
         return this.inProgress;
     }
 
-    LoadModel (files, fileSource, settings, callbacks, isUploaded)
+    async LoadModel (files, fileSource, settings, callbacks, isUploaded)
     {
         if (!isUploaded && this.inProgress) {
             return;
@@ -27,6 +27,7 @@ export class ThreeModelLoader
 
         this.inProgress = true;
         callbacks.onLoadStart ();
+        await Delay();
         this.importer.ImportFiles (files, fileSource, settings, {
             onFilesLoaded : () => {
                 callbacks.onImportStart ();

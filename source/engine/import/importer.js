@@ -140,12 +140,13 @@ export class Importer
         });
     }
 
-    ImportFiles (fileList, fileSource, settings, callbacks, isUploaded)
+    async ImportFiles (fileList, fileSource, settings, callbacks, isUploaded)
     {
         if (isUploaded) {
             this.fileList = new FileList ();
             this.fileList.files = fileList;
             callbacks.onFilesLoaded ();
+            await Delay();
             RunTaskAsync (() => {
                 this.ImportLoadedFiles (settings, callbacks);
             });

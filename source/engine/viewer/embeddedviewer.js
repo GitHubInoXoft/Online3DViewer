@@ -249,7 +249,7 @@ export class EmbeddedViewer
         TransformFileHostUrls (modelUrls);
 
         this.percent = 20;
-        let availablePercent = 80;
+        let availablePercent = 75;
         let percentSteps = 3;
 
         try {
