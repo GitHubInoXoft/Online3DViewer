@@ -16,6 +16,7 @@ import { ImporterStp } from './importerstp.js';
 import { ImporterStl } from './importerstl.js';
 import { ImporterBim } from './importerbim.js';
 import { ImporterThree3mf, ImporterThreeDae, ImporterThreeFbx, ImporterThreeWrl } from './importerthree.js';
+import { Delay } from '../utils/utils.js';
 
 export class ImportSettings
 {
@@ -149,8 +150,9 @@ export class Importer
                 this.ImportLoadedFiles (settings, callbacks);
             });
         } else {
-            this.LoadFiles (fileList, fileSource, () => {
+            this.LoadFiles (fileList, fileSource, async () => {
                 callbacks.onFilesLoaded ();
+                await Delay();
                 RunTaskAsync (() => {
                     this.ImportLoadedFiles (settings, callbacks);
                 });

@@ -2,6 +2,7 @@ import { Direction } from '../geometry/geometry.js';
 import { Importer } from '../import/importer.js';
 import { ConvertModelToThreeObject, ModelToThreeConversionOutput, ModelToThreeConversionParams } from './threeconverter.js';
 import { ConvertColorToThreeColor, HasHighpDriverIssue } from './threeutils.js';
+import { Delay } from '../utils/utils.js';
 
 export class ThreeModelLoader
 {
@@ -37,8 +38,9 @@ export class ThreeModelLoader
                     callbacks.onSelectMainFile (fileNames, selectFile);
                 }
             },
-            onImportSuccess : (importResult) => {
+            onImportSuccess : async (importResult) => {
                 callbacks.onVisualizationStart ();
+                await Delay();
                 let params = new ModelToThreeConversionParams ();
                 params.forceMediumpForMaterials = this.hasHighpDriverIssue;
                 let output = new ModelToThreeConversionOutput ();
