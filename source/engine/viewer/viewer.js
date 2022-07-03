@@ -34,6 +34,53 @@ export function GetDefaultCamera (direction)
     return null;
 }
 
+function GetDefaultViewCamera (side) {
+    switch (side) {
+        case 'right': {
+            return new Camera (
+              new Coord3D (1, 0, 0),
+              new Coord3D (0.0, 0.0, 0.0),
+              new Coord3D (0, 1, 0)
+            );
+        }
+        case 'back': {
+            return new Camera (
+              new Coord3D (0, 1, 0),
+              new Coord3D (0.0, 0.0, 0.0),
+              new Coord3D (0, 0, 1)
+            );
+        }
+        case 'top': {
+            return new Camera (
+              new Coord3D (0, 0, 1),
+              new Coord3D (0.0, 0.0, 0.0),
+              new Coord3D (0, 1.0, 0)
+            );
+        }
+        case 'left': {
+            return new Camera (
+              new Coord3D (-1, 0, 0),
+              new Coord3D (0.0, 0.0, 0.0),
+              new Coord3D (0, 1, 0)
+            );
+        }
+        case 'front': {
+            return new Camera (
+              new Coord3D (0, -1, 0),
+              new Coord3D (0.0, 0.0, 0.0),
+              new Coord3D (0, 0, 1)
+            );
+        }
+        case 'bottom': {
+            return new Camera (
+              new Coord3D (0, 0, -1),
+              new Coord3D (0.0, 0.0, 0.0),
+              new Coord3D (0, 1, 0)
+            );
+        }
+    }
+}
+
 export function TraverseThreeObject (object, processor)
 {
     if (!processor (object)) {
@@ -382,6 +429,22 @@ export class Viewer
         this.Render ();
     }
 
+    ChangeView (side)
+    {
+        let oldCamera = this.navigation.GetCamera ();
+        let defaultCamera = this.GetDefaultViewCamera(side);
+        let defaultDir = SubCoord3D (defaultCamera.eye, defaultCamera.center);
+        let distance = CoordDistance3D (oldCamera.center, oldCamera.eye);
+        let newEye = oldCamera.center.Clone ().Offset (defaultDir, distance);
+        let newCamera = oldCamera.Clone ();
+
+        newCamera.up = this.GetDefaultViewCamera(side).up;
+        newCamera.eye = newEye;
+
+        this.navigation.MoveCamera (newCamera, this.settings.animationSteps);
+        this.Render ();
+    }
+
     FlipUpVector ()
     {
         let oldCamera = this.navigation.GetCamera ();
@@ -593,6 +656,20 @@ export class Viewer
         });
 
         this.upVector = new UpVector ();
+    }
+
+    SetPerspective ()
+    {
+        this.camera = new THREE.PerspectiveCamera (45.0, this.canvas.width / this.canvas.height, 0.1, 1000.0);
+        this.Render ();
+    }
+
+    SetIsometric ()
+    {
+        let aspect = this.canvas.width / this.canvas.height;
+        let d = 2;
+        this.camera = new THREE.OrthographicCamera( - d * aspect, d * aspect, d, - d, 1, 1000 );
+        this.Render ();
     }
 
     InitShading  ()
