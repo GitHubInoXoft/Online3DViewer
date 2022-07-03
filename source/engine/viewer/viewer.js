@@ -432,13 +432,13 @@ export class Viewer
     ChangeView (side)
     {
         let oldCamera = this.navigation.GetCamera ();
-        let defaultCamera = this.GetDefaultViewCamera(side);
+        let defaultCamera = GetDefaultViewCamera(side);
         let defaultDir = SubCoord3D (defaultCamera.eye, defaultCamera.center);
         let distance = CoordDistance3D (oldCamera.center, oldCamera.eye);
         let newEye = oldCamera.center.Clone ().Offset (defaultDir, distance);
         let newCamera = oldCamera.Clone ();
 
-        newCamera.up = this.GetDefaultViewCamera(side).up;
+        newCamera.up = GetDefaultViewCamera(side).up;
         newCamera.eye = newEye;
 
         this.navigation.MoveCamera (newCamera, this.settings.animationSteps);
