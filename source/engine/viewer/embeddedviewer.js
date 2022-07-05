@@ -5,6 +5,7 @@ import { FileSource, TransformFileHostUrls } from '../io/fileutils.js';
 import { ParameterConverter } from '../parameters/parameterlist.js';
 import { ThreeModelLoader } from '../threejs/threemodelloader.js';
 import { Viewer } from './viewer.js';
+import { ColorToHexString } from '../main.js';
 
 export class EmbeddedViewer
 {
@@ -123,6 +124,15 @@ export class EmbeddedViewer
             });
         };
 
+        const getDefaultColor = (model, idx) =>
+        {
+            const { meshes, materials } = model;
+            const vertexColors = meshes[idx].vertexColors;
+            const materialColor = materials[idx].color;
+            const color = vertexColors.length ? vertexColors[0] : materialColor;
+            return `#${ColorToHexString(color)}`;
+        };
+
         this.viewer.treeMeshsesNumber = 0;
 
         return new Promise((resolve, reject) => {
@@ -172,12 +182,15 @@ export class EmbeddedViewer
                         ];
                         let meshes = [];
                         let meshIdx = 0;
+                        let generalMeshIdx = 0;
                         this.viewer.geometry.EnumerateMeshes((mesh) => {
-                            if (meshIdx > this.viewer.lastMeshIdx) {
+                            if (generalMeshIdx > this.viewer.lastMeshIdx) {
+                                mesh.defaultColor = getDefaultColor(importResult.model, meshIdx);
                                 meshes.push(mesh);
                                 this.viewer.lastMeshIdx++;
+                                meshIdx++;
                             }
-                            meshIdx++;
+                            generalMeshIdx++;
                         });
                         this.viewer.treeList = [
                           ...this.viewer.treeList,
@@ -197,17 +210,25 @@ export class EmbeddedViewer
                         return true;
                     });
                     this.viewer.AdjustClippingPlanesToSphere (boundingSphere);
+
                     if (this.parameters.camera) {
                         this.viewer.SetCamera (this.parameters.camera);
                     } else {
                         this.viewer.SetUpVector (Direction.Y, false);
                     }
+
                     this.viewer.FitSphereToWindow (boundingSphere, false);
                     this.viewer.meshesNames = importResult.model.meshes.map((mesh) => mesh.name);
+                    this.viewer.meshesColors = importResult.model.meshes.map((mesh) => mesh.name);
+
                     let meshes = [];
+                    let meshIdx = 0;
                     this.viewer.geometry.EnumerateMeshes((mesh) => {
+                        mesh.defaultColor = getDefaultColor(importResult.model, meshIdx);
                         meshes.push(mesh);
+                        meshIdx++;
                     });
+
                     this.viewer.lastMeshIdx = meshes.length - 1;
                     this.viewer.treeList = this.GenerateTreeList(
                       importResult.model.root,
