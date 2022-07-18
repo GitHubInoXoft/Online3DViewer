@@ -128,7 +128,7 @@ export class EmbeddedViewer
         {
             const { meshes, materials } = model;
             const vertexColors = meshes[idx].vertexColors;
-            const materialColor = materials[idx].color;
+            const materialColor = materials[idx] ? materials[idx].color : materials[0].color;
             const color = vertexColors.length ? vertexColors[0] : materialColor;
             return `#${ColorToHexString(color)}`;
         };
