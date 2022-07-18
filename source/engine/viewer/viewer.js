@@ -605,7 +605,10 @@ export class Viewer
         }
         return {
             ...intersection.object.userData,
-            uuid: intersection.object.uuid
+            uuid: intersection.object.uuid,
+            test: {
+                ...intersection
+            }
         };
     }
 
@@ -643,17 +646,34 @@ export class Viewer
         });
     }
 
-    AddControl (mesh)
+    AddControl (mouseCoordinates)
     {
+        const data = this.GetMeshUserDataUnderMouse(mouseCoordinates);
+
+        if (!data) return;
+
+        // console.log('data', data);
+
         this.control = new TransformControls( this.camera, this.renderer.domElement );
         this.control.addEventListener( 'change', () => {
             this.renderer.render (this.scene, this.camera);
         });
         this.control.addEventListener( 'dragging-changed', ( event ) => {
             this.navigation.enable = !event.value;
+            console.log('object', this.control.object);
         });
-        this.control.attach(mesh);
+        this.control.attach(data.object);
         this.scene.add(this.control);
+
+        const n = new THREE.Vector3();
+        n.copy((data.test.face).normal);
+        n.transformDirection(data.test.object.matrixWorld);
+
+        // console.log('n', n);
+        // console.log('this.control', this.control);
+
+        this.control.position.copy(data.test.point);
+
         this.Render();
     }
 
