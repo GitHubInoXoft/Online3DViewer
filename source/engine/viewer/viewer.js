@@ -9,6 +9,7 @@ import { ViewerExtraGeometry, ViewerGeometry } from './viewergeometry.js';
 import { MeasureTool } from '../../website/measuretool.js';
 import { MovingTool } from '../../website/movingtool.js';
 import { Settings } from '../../website/settings.js';
+import { TransformControls } from '../controlls/TransformControls.js';
 
 export function GetDefaultCamera (direction)
 {
@@ -256,6 +257,7 @@ export class Viewer
         this.camera = null;
         this.shading = null;
         this.navigation = null;
+        this.control = null;
         this.upVector = null;
         this.settings = {
             animationSteps : 40
@@ -639,6 +641,26 @@ export class Viewer
         this.geometry.EnumerateMeshes ((mesh) => {
             enumerator (mesh);
         });
+    }
+
+    AddControl (mesh)
+    {
+        this.control = new TransformControls( this.camera, this.renderer.domElement );
+        this.control.addEventListener( 'change', () => {
+            this.renderer.render (this.scene, this.camera);
+        });
+        this.control.addEventListener( 'dragging-changed', ( event ) => {
+            this.navigation.enable = !event.value;
+        });
+        this.control.attach(mesh);
+        this.scene.add(this.control);
+        this.Render();
+    }
+
+    ResetControl ()
+    {
+        if (!this.control) return;
+        this.control.reset();
     }
 
     InitNavigation ()

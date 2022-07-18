@@ -242,6 +242,7 @@ export class Navigation
 		this.camera = camera;
 		this.callbacks = callbacks;
 		this.fixUpVector = true;
+		this.enable = true;
 
 		this.mouse = new MouseInteraction ();
 		this.touch = new TouchInteraction ();
@@ -373,6 +374,8 @@ export class Navigation
 
 	OnMouseMove (ev)
 	{
+		if (!this.enable) return;
+
 		this.mouse.Move (this.canvas, ev);
 		this.clickDetector.Move (this.mouse.GetPosition ());
 		if (this.onMouseMove) {
@@ -443,6 +446,8 @@ export class Navigation
 	OnTouchMove (ev)
 	{
 		ev.preventDefault ();
+
+		if (!this.enable) return;
 
 		this.touch.Move (this.canvas, ev);
 		this.clickDetector.Move (this.touch.GetPosition ());
