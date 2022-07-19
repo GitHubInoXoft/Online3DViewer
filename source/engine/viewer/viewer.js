@@ -606,9 +606,7 @@ export class Viewer
         return {
             ...intersection.object.userData,
             uuid: intersection.object.uuid,
-            test: {
-                ...intersection
-            }
+            object: intersection.object
         };
     }
 
@@ -646,33 +644,30 @@ export class Viewer
         });
     }
 
-    AddControl (mouseCoordinates)
+    GetCenterOfMesh (mesh)
     {
-        const data = this.GetMeshUserDataUnderMouse(mouseCoordinates);
+        const geometry = mesh.geometry;
+        geometry.computeBoundingBox();
+        const center = new THREE.Vector3();
+        geometry.boundingBox.getCenter(center);
+        mesh.localToWorld(center);
+        return center;
+    }
 
-        if (!data) return;
-
-        // console.log('data', data);
-
+    AddControl (mesh)
+    {
         this.control = new TransformControls( this.camera, this.renderer.domElement );
         this.control.addEventListener( 'change', () => {
             this.renderer.render (this.scene, this.camera);
         });
         this.control.addEventListener( 'dragging-changed', ( event ) => {
             this.navigation.enable = !event.value;
-            console.log('object', this.control.object);
         });
-        this.control.attach(data.object);
+        this.control.attach(mesh);
         this.scene.add(this.control);
 
-        const n = new THREE.Vector3();
-        n.copy((data.test.face).normal);
-        n.transformDirection(data.test.object.matrixWorld);
-
-        // console.log('n', n);
-        // console.log('this.control', this.control);
-
-        this.control.position.copy(data.test.point);
+        const meshCenter = this.GetCenterOfMesh(mesh);
+        this.control.position.copy(meshCenter);
 
         this.Render();
     }
@@ -680,7 +675,8 @@ export class Viewer
     ResetControl ()
     {
         if (!this.control) return;
-        this.control.reset();
+        this.control.detach();
+        this.Render();
     }
 
     InitNavigation ()
