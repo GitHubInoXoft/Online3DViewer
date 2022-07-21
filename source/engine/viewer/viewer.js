@@ -7,9 +7,9 @@ import { GetDomElementInnerDimensions } from './domutils.js';
 import { Navigation } from './navigation.js';
 import { ViewerExtraGeometry, ViewerGeometry } from './viewergeometry.js';
 import { MeasureTool } from '../../website/measuretool.js';
-import { MovingTool } from '../../website/movingtool.js';
 import { Settings } from '../../website/settings.js';
-import { TransformControls } from '../controlls/TransformControls.js';
+import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
+import { Vector3 } from 'three';
 
 export function GetDefaultCamera (direction)
 {
@@ -263,7 +263,6 @@ export class Viewer
             animationSteps : 40
         };
         this.measureTool = new MeasureTool (this, new Settings());
-        this.movingTool = null;
     }
 
     Init (canvas)
@@ -287,10 +286,9 @@ export class Viewer
         this.geometry = new ViewerGeometry (this.scene);
         this.extraGeometry = new ViewerExtraGeometry (this.scene);
 
-        this.movingTool = new MovingTool (this, this.scene);
-
         this.InitNavigation ();
         this.InitShading ();
+        this.InitTransformControl();
 
         this.Render ();
     }
@@ -606,7 +604,7 @@ export class Viewer
         return {
             ...intersection.object.userData,
             uuid: intersection.object.uuid,
-            object: intersection.object
+            object: intersection.object,
         };
     }
 
@@ -647,8 +645,8 @@ export class Viewer
     GetCenterOfMesh (mesh)
     {
         const geometry = mesh.geometry;
-        geometry.computeBoundingBox();
         const center = new THREE.Vector3();
+        geometry.computeBoundingBox();
         geometry.boundingBox.getCenter(center);
         mesh.localToWorld(center);
         return center;
@@ -656,19 +654,19 @@ export class Viewer
 
     AddControl (mesh)
     {
-        this.control = new TransformControls( this.camera, this.renderer.domElement );
-        this.control.addEventListener( 'change', () => {
-            this.renderer.render (this.scene, this.camera);
-        });
-        this.control.addEventListener( 'dragging-changed', ( event ) => {
-            this.navigation.enable = !event.value;
-        });
+        const offset = new Vector3();
+        const newPosition = new Vector3();
+
+        mesh.geometry.computeBoundingBox();
+        mesh.geometry.boundingBox.getCenter(newPosition);
+        mesh.geometry.boundingBox.getCenter(offset).negate();
+
+        if (newPosition.x !== 0 || newPosition.y !== 0 || newPosition.z !== 0) {
+            mesh.geometry.translate(offset.x, offset.y, offset.z);
+            mesh.position.copy(newPosition);
+        }
+
         this.control.attach(mesh);
-        this.scene.add(this.control);
-
-        const meshCenter = this.GetCenterOfMesh(mesh);
-        this.control.position.copy(meshCenter);
-
         this.Render();
     }
 
@@ -694,6 +692,18 @@ export class Viewer
         });
 
         this.upVector = new UpVector ();
+    }
+
+    InitTransformControl ()
+    {
+        this.control = new TransformControls(this.camera, this.renderer.domElement);
+        this.control.addEventListener( 'change', () => {
+            this.renderer.render (this.scene, this.camera);
+        });
+        this.control.addEventListener( 'dragging-changed', ( event ) => {
+            this.navigation.enable = !event.value;
+        });
+        this.scene.add(this.control);
     }
 
     SetPerspective ()
