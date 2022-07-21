@@ -664,6 +664,7 @@ export class Viewer
         if (newPosition.x !== 0 || newPosition.y !== 0 || newPosition.z !== 0) {
             mesh.geometry.translate(offset.x, offset.y, offset.z);
             mesh.position.copy(newPosition);
+            mesh.defaultPosition = newPosition;
         }
 
         this.control.attach(mesh);
