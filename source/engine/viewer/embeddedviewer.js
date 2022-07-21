@@ -185,6 +185,7 @@ export class EmbeddedViewer
                         let generalMeshIdx = 0;
                         this.viewer.geometry.EnumerateMeshes((mesh) => {
                             if (generalMeshIdx > this.viewer.lastMeshIdx) {
+                                this.viewer.ConvertMeshTranslateToPosition(mesh);
                                 mesh.defaultColor = getDefaultColor(importResult.model, meshIdx);
                                 meshes.push(mesh);
                                 this.viewer.lastMeshIdx++;
@@ -224,6 +225,7 @@ export class EmbeddedViewer
                     let meshes = [];
                     let meshIdx = 0;
                     this.viewer.geometry.EnumerateMeshes((mesh) => {
+                        this.viewer.ConvertMeshTranslateToPosition(mesh);
                         mesh.defaultColor = getDefaultColor(importResult.model, meshIdx);
                         meshes.push(mesh);
                         meshIdx++;

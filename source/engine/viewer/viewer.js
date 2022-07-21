@@ -642,18 +642,10 @@ export class Viewer
         });
     }
 
-    GetCenterOfMesh (mesh)
+    ConvertMeshTranslateToPosition (mesh)
     {
-        const geometry = mesh.geometry;
-        const center = new THREE.Vector3();
-        geometry.computeBoundingBox();
-        geometry.boundingBox.getCenter(center);
-        mesh.localToWorld(center);
-        return center;
-    }
+        if (mesh.isPosition) return;
 
-    AddControl (mesh)
-    {
         const offset = new Vector3();
         const newPosition = new Vector3();
 
@@ -661,12 +653,14 @@ export class Viewer
         mesh.geometry.boundingBox.getCenter(newPosition);
         mesh.geometry.boundingBox.getCenter(offset).negate();
 
-        if (newPosition.x !== 0 || newPosition.y !== 0 || newPosition.z !== 0) {
-            mesh.geometry.translate(offset.x, offset.y, offset.z);
-            mesh.position.copy(newPosition);
-            mesh.defaultPosition = newPosition;
-        }
+        mesh.geometry.translate(offset.x, offset.y, offset.z);
+        mesh.position.copy(newPosition);
+        mesh.defaultPosition = newPosition;
+        mesh.isPosition = true;
+    }
 
+    AddControl (mesh)
+    {
         this.control.attach(mesh);
         this.Render();
     }
