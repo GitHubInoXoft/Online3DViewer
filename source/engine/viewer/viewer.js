@@ -391,8 +391,8 @@ export class Viewer
             this.camera.near = 0.01;
             this.camera.far = 100.0;
         } else if (boundingSphere.radius < 100.0) {
-            this.camera.near = 0.1;
-            this.camera.far = 1000.0;
+            this.camera.near = 0.2;
+            this.camera.far = 2000.0;
         } else if (boundingSphere.radius < 1000.0) {
             this.camera.near = 10.0;
             this.camera.far = 10000.0;

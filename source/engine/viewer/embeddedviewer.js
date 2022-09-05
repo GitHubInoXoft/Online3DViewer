@@ -202,6 +202,12 @@ export class EmbeddedViewer
                             [...this.viewer.meshesNames]
                           ),
                         ];
+
+                        let boundingSphere = this.viewer.GetBoundingSphere (() => {
+                            return true;
+                        });
+                        this.viewer.AdjustClippingPlanesToSphere (boundingSphere);
+
                         resolve();
                         return;
                     }
